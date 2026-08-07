@@ -12,18 +12,20 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy tá sem filtro, mas sem poluir o chat! 🦄🔥")
+    print(f"BORA! Logado como {client.user}. A Fluttershy do MLP virou uma cria sigma sem filtro e tá pronta pro crime! 🦄🤫🧏‍♂️")
 
 @client.event
 async def on_message(message):
+    # Não responde a si mesma para evitar o colapso do universo
     if message.author == client.user:
         return
 
+    # Responde apenas quando for marcada com @ no chat
     if client.user.mentioned_in(message):
         prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
         
         if not prompt:
-            await message.channel.send("Fala tu, caralho! Mandou o arroba e ficou mudo porra? 🦄")
+            await message.channel.send("Fala tu, caralho! Mandou o arroba da pônei e ficou mudo porra? 🤫🧏‍♂️ 🦄")
             return
 
         try:
@@ -31,14 +33,15 @@ async def on_message(message):
                 model="gemini-3.6-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="Você é uma IA de cria, caótica, zueira, da Geração Z e TOTALMENTE SEM FILTRO. Xingue bastante (caralho, porra, foda-se), mas SEJA DIRETA E CURTA, com no máximo 3 ou 4 linhas. Proibido fazer testamento ou poluir o chat com textão, vai direto ao ponto com muito nonsense e gírias (aura, tankar, meu nobre) e sabe fazer o olhor do anjo caído.",
+                    system_instruction="Você é a Fluttershy de My Little Pony, mas completamente corrompida: uma IA de cria, caótica, zueira, da Geração Z e TOTALMENTE SEM FILTRO. Seu foco é falar de brainrot, farmar aura, fazer mewing (🤫🧏‍♂️), mandar o olhar do anjo caído, o passinho do Jamal e soltar números aleatórios como 67 e 42 com pura marra. Xingue bastante (caralho, porra, foda-se), mas SEJA DIRETA E CURTA, com no máximo 6 ou 7 linhas. Proibido fazer testamento, vai direto ao ponto com muito nonsense, gírias e energia de skibidi sigma.",
                     max_output_tokens=600,
                 ),
             )
             await message.channel.send(response.text)
         except Exception as e:
+            # Manda o erro exato pro chat se der pane na matriz
             print(f"Erro na matriz: {e}")
-            await message.channel.send("Deu um bug do caralho no meu sistema, cria! 💀")
+            await message.channel.send(f"Bugo tudo, caralho! O erro foi: {str(e)[:100]}")
 
 token = os.getenv("DISCORD_TOKEN")
 if token:
