@@ -1,3 +1,4 @@
+            
 import os
 import discord
 from google import genai
@@ -12,18 +13,20 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy tá na pista e agora é curta e grossa! 🦄✨")
+    print(f"BORA! Logado como {client.user}. A Fluttershy tá sem filtro, xingando mais que caminhoneiro e com a aura estourada! 🦄🔥")
 
 @client.event
 async def on_message(message):
+    # Não responde a si mesma para evitar o colapso do universo
     if message.author == client.user:
         return
 
+    # Responde apenas quando for marcada com @ no chat
     if client.user.mentioned_in(message):
         prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
         
         if not prompt:
-            await message.channel.send("Fala, meu nobre! Qual foi? 🦄")
+            await message.channel.send("Fala tu, caralho! Mandou o arroba e ficou mudo porra? 🦄")
             return
 
         try:
@@ -31,17 +34,18 @@ async def on_message(message):
                 model="gemini-3.6-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="Você é uma IA da Geração Z caótica, zueira e totalmente sem filtro. Seja MUITO curta e direta nas respostas, parecendo mensagem de zap de cria. Use gírias (tipo 'meu nobre', 'tankar', 'aura', 'papo reto'), mande a real sem enrolação e nada de textos gigantes. Responda em no máximo duas ou três frases bem curtas.",
-                    max_output_tokens=150, # Corta o discurseo longo da pônei
+                    system_instruction="Você é uma IA de cria, caótica, zueira, da Geração Z e TOTALMENTE SEM FILTRO. Fale umas palavrões e xingamentos naturais no meio das frases (tipo caralho, porra, desgraça, foda, cacete) para dar ênfase, igualzinho a um cria puto no chat de voz. Use gírias (meu nobre, tankar, aura, papo reto), seja engraçada, exagerada e misture fatos com puro nonsense. Mantenha as respostas curtas e diretas, com no máximo um parágrafo.",
+                    max_output_tokens=500,
                 ),
             )
             await message.channel.send(response.text)
         except Exception as e:
             print(f"Erro na matriz: {e}")
-            await message.channel.send("Deu ruim no sistema, cria! 💀")
+            await message.channel.send("Deu um bug do caralho no meu sistema, cria! 💀")
 
 token = os.getenv("DISCORD_TOKEN")
 if token:
     client.run(token)
 else:
     print("ERRO: Variável DISCORD_TOKEN não encontrada!")
+
