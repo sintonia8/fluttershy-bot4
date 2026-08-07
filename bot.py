@@ -1,12 +1,27 @@
+import os
+import discord
+from groq import Groq
+
+# Inicializa o cliente da Groq puxando a variável do Railway
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
+
+@client.event
+async def on_ready():
+    print(f"BORA! Logado como {client.user}. A Fluttershy tá na Groq voando a 300km/h! 🦄🔥")
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
-    # AQUI ESTÁ O PULO DO GATO:
-    # Se for DM, ela responde tudo. Se for canal, ela só responde se começar com "Fluttershy,"
-    # ou se for marcada. Escolhi "Fluttershy," pra ficar tipo um chamado.
-    
+    # Lógica de mensagens:
+    # - No privado (DM): responde tudo.
+    # - No servidor: responde se começar com "fluttershy," ou se for mencionada com o @.
     if isinstance(message.channel, discord.DMChannel):
         prompt = message.content.strip()
     elif message.content.lower().startswith("fluttershy,"):
@@ -14,13 +29,14 @@ async def on_message(message):
     elif client.user.mentioned_in(message):
         prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
     else:
-        return # Se não for nada disso, ela ignora e segue o baile
+        return
 
     if not prompt:
         await message.channel.send("Fala tu, caralho! Mandou o chamado e ficou mudo? 🤫🧏‍♂️ 🦄")
         return
 
     try:
+        # Chamada para a API da Groq usando o Llama 3
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -42,3 +58,9 @@ async def on_message(message):
     except Exception as e:
         print(f"Erro na matriz: {e}")
         await message.channel.send(f"Bugo tudo, caralho! O erro foi: {str(e)[:100]}")
+
+token = os.getenv("DISCORD_TOKEN")
+if token:
+    client.run(token)
+else:
+    print("ERRO: Variável DISCORD_TOKEN não encontrada!")
