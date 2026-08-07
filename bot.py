@@ -12,31 +12,39 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy tá na Groq voando a 300km/h! 🦄🔥")
+    print(f"BORA! Logado como {client.user}. A Fluttershy tá à espreita por menções! 🦄🔥")
 
 @client.event
 async def on_message(message):
+    # Ignora as próprias mensagens do bot
     if message.author == client.user:
         return
 
-    # Lógica atualizada:
-    # - Se for QUALQUER DM (individual ou grupo privado), ela responde direto.
-    # - Se for em servidor normal, responde se começar com "fluttershy," ou com menção.
+    conteudo = message.content.lower()
+
+    # Se for mensagem direta (DM), responde tudo.
     if isinstance(message.channel, discord.DMChannel):
         prompt = message.content.strip()
-    elif message.content.lower().startswith("fluttershy,"):
-        prompt = message.content.lower().replace("fluttershy,", "", 1).strip()
-    elif client.user.mentioned_in(message):
-        prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
     else:
-        return
+        # Palavras-chave que ativam a pônei no servidor
+        gatilhos = ["fluttershy", "fluter", "flutt", "pônei", "ponei"]
+        
+        # Verifica se alguma das palavras está na mensagem OU se ela foi marcada com @
+        foi_chamada = any(gatilho in conteudo for gatilho in gatilhos) or client.user.mentioned_in(message)
+        
+        if foi_chamada:
+            # Limpa a menção do bot se houver, pra não poluir o prompt
+            prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
+        else:
+            # Se ninguém chamou pelo nome, ela ignora e segue a vida
+            return
 
     if not prompt:
-        await message.channel.send("Fala tu, caralho! Mandou mensagem e ficou mudo? 🤫🧏‍♂️ 🦄")
+        await message.channel.send("Fala tu, caralho! Me chamou e ficou mudo? 🤫🧏‍♂️ 🦄")
         return
 
     try:
-        # Chamada para a API da Groq com a resenha completa
+        # Chamada para a API da Groq com a resenha pesada e sem filtro
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
