@@ -27,7 +27,7 @@ async def on_message(message):
         prompt = message.content.strip()
     else:
         # Palavras-chave que ativam a pônei no servidor
-        gatilhos = ["fluttershy", "fluter", "flutt", "pônei", "ponei"]
+        gatilhos = ["fluttershy", "fluter", "flutt", "pônei", "ponei", "fufu", "labubu", "f", "flutershy", "facista", "feijao com farinha", "feijão com farinha", "md", "mlp", "pony town", "bot", "burra"]
         
         # Verifica se alguma das palavras está na mensagem OU se ela foi marcada com @
         foi_chamada = any(gatilho in conteudo for gatilho in gatilhos) or client.user.mentioned_in(message)
