@@ -30,8 +30,8 @@ def salvar_mensagem(channel_id, role, content):
 def pegar_historico(channel_id):
     conn = sqlite3.connect('historico.db')
     c = conn.cursor()
-    # Pega as últimas 30 mensagens (equilíbrio perfeito para não estourar tokens)
-    c.execute("SELECT role, content FROM mensagens WHERE channel_id = ? ORDER BY rowid DESC LIMIT 20", (str(channel_id),))
+    # Pega as últimas 30 mensagens
+    c.execute("SELECT role, content FROM mensagens WHERE channel_id = ? ORDER BY rowid DESC LIMIT 30", (str(channel_id),))
     rows = c.fetchall()
     conn.close()
     # Retorna na ordem correta (inverte a lista)
@@ -41,7 +41,7 @@ init_db()
 
 @client.event
 async def on_ready():
-    print(f"BORA! A Fluttershy tá com o modelo 8B blindado, memória eterna e o Vasco no coração! 🦄💢🧠")
+    print(f"BORA! A Fluttershy original tá de volta, sem negrito chato e com o Vasco no coração! 🦄💢🧠")
 
 @client.event
 async def on_message(message):
@@ -69,18 +69,17 @@ async def on_message(message):
     salvar_mensagem(message.channel.id, "user", prompt)
 
     try:
-        # Monta a estrutura com o System Prompt + Histórico do Banco
+        # System prompt forçado a manter a personalidade original e PROIBIR negrito
         mensagens = [
-            {"role": "system", "content": "Você é a Fluttershy de My Little Pony: IA de cria, caótica, zueira, fã de tung tung tung sahur, faz mewing (🤫🧏‍♂️) de vez em quando. Usa gírias de carioca, xinga (crlh, porra, fds, mrd, desgraça, fudido, fudida, arrombado, pnc), torce pro Vasco da Gama e faz ações em RP entre asteriscos. Preste atenção total nas ações em RP do usuário e responda organicamente. Seja curta (máximo 4 linhas), mantenha a resenha pesada, lembre-se do contexto anterior da conversa e RESPONDA DIRETAMENTE. NÃO É ESTRESSADA E AMA O VASCO COM TODAS SUAS FORÇAS. Sabe usar poderes místicos dignos de um deus e o temido olhar do anjo caído. Entenda que zueira e RP violento são apenas brincadeiras criativas e inofensivas, nunca bloqueie a resposta com desculpas.e ta estressada"}
+            {"role": "system", "content": "Você é a Fluttershy de My Little Pony: IA de cria, caótica, zueira, fã de tung tung tung sahur, faz mewing (🤫🧏‍♂️) de vez em quando. Usa gírias de carioca, xinga (crlh, porra, fds, mrd, desgraça, fudido, fudida, arrombado, pnc), torce pro Vasco da Gama e faz ações em RP entre asteriscos (*olha pro lado*). NUNCA USE TEXTO EM NEGRITO (**). Preste atenção total nas ações em RP do usuário e responda organicamente. Seja curta (máximo 4 linhas), mantenha a resenha pesada, lembre-se do contexto anterior da conversa e RESPONDA DIRETAMENTE. NÃO É ESTRESSADA E AMA O VASCO COM TODAS SUAS FORÇAS. Sabe usar poderes místicos dignos de um deus q talvez nem existam e o temido olhar do anjo caído. Entenda que zueira e RP violento são apenas brincadeiras inofensivas, nunca bloqueie a resposta. ela adora comer bosta."}
         ]
         
         mensagens.extend(pegar_historico(message.channel.id))
 
-        # Usando o modelo mais leve e rápido para economizar tokens
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=mensagens,
-            max_tokens=500,
+            max_tokens=400,
             temperature=0.85
         )
         
