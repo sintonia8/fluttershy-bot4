@@ -79,7 +79,7 @@ async def on_message(message):
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=mensagens,
-            max_tokens=400,
+            max_tokens=90,
             temperature=0.85
         )
         
