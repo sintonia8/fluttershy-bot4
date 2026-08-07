@@ -11,7 +11,7 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy-bot4 tá online e indestrutível! 🦄✨")
+    print(f"BORA! Logado como {client.user}. A Fluttershy tá viva e atualizada! 🦄✨")
 
 @client.event
 async def on_message(message):
@@ -27,7 +27,7 @@ async def on_message(message):
 
         try:
             response = ai_client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-3.6-flash",
                 contents=prompt,
             )
             await message.channel.send(response.text)
