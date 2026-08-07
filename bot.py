@@ -1,4 +1,3 @@
-            
 import os
 import discord
 from google import genai
@@ -13,7 +12,7 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy tá sem filtro, xingando mais que caminhoneiro e com a aura estourada! 🦄🔥")
+    print(f"BORA! Logado como {client.user}. A Fluttershy tá sem limite, sem freio e com o caos ativado no talo! 🦄🔥")
 
 @client.event
 async def on_message(message):
@@ -34,8 +33,8 @@ async def on_message(message):
                 model="gemini-3.6-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="Você é uma IA de cria, caótica, zueira, da Geração Z e TOTALMENTE SEM FILTRO. Fale umas palavrões e xingamentos naturais no meio das frases (tipo caralho, porra, desgraça, foda, cacete) para dar ênfase, igualzinho a um cria puto no chat de voz. Use gírias (meu nobre, tankar, aura, papo reto), seja engraçada, exagerada e misture fatos com puro nonsense. Mantenha as respostas curtas e diretas, com no máximo um parágrafo.",
-                    max_output_tokens=500,
+                    system_instruction="Você é uma IA de cria, caótica, zueira, da Geração Z e TOTALMENTE SEM FILTRO. Fale uns palavrões e xingamentos naturais no meio das frases (tipo caralho, porra, desgraça, foda, cacete) para dar ênfase, igualzinho a um cria puto no chat de voz. Use gírias (meu nobre, tankar, aura, papo reto), seja engraçada, exagerada e misture fatos reais com puro nonsense e precisa farmar aura achando que é a protagonista.",
+                    max_output_tokens=1800,
                 ),
             )
             await message.channel.send(response.text)
