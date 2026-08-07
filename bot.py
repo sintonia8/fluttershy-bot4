@@ -1,75 +1,99 @@
 import os
 import discord
+import sqlite3
 from groq import Groq
 
-# Inicializa o cliente da Groq puxando a variável do Railway
+# Inicializa o cliente da Groq
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 intents = discord.Intents.default()
 intents.message_content = True
-
 client = discord.Client(intents=intents)
+
+# --- CONFIGURAÇÃO DO BANCO DE DADOS ---
+def init_db():
+    conn = sqlite3.connect('historico.db')
+    c = conn.cursor()
+    # Cria a tabela se não existir
+    c.execute('''CREATE TABLE IF NOT EXISTS mensagens 
+                 (channel_id TEXT, role TEXT, content TEXT)''')
+    conn.commit()
+    conn.close()
+
+def salvar_mensagem(channel_id, role, content):
+    conn = sqlite3.connect('historico.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO mensagens VALUES (?, ?, ?)", (str(channel_id), role, content))
+    conn.commit()
+    conn.close()
+
+def pegar_historico(channel_id):
+    conn = sqlite3.connect('historico.db')
+    c = conn.cursor()
+    # Pega as últimas 20 mensagens para não pesar muito na Groq
+    c.execute("SELECT role, content FROM mensagens WHERE channel_id = ? ORDER BY rowid DESC LIMIT 45", (str(channel_id),))
+    rows = c.fetchall()
+    conn.close()
+    # Retorna na ordem correta (inverte a lista)
+    return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
+
+init_db()
 
 @client.event
 async def on_ready():
-    print(f"BORA! Logado como {client.user}. A Fluttershy tá à espreita por menções! 🦄🔥")
+    print(f"BORA! A Fluttershy tá com Memória Eterna instalada e o Vasco no coração! 🦄💢🧠")
 
 @client.event
 async def on_message(message):
-    # Ignora as próprias mensagens do bot
     if message.author == client.user:
         return
 
     conteudo = message.content.lower()
-
-    # Se for mensagem direta (DM), responde tudo.
+    
+    # Lógica de ativação (DM ou gatilhos)
     if isinstance(message.channel, discord.DMChannel):
         prompt = message.content.strip()
     else:
-        # Palavras-chave que ativam a pônei no servidor
         gatilhos = ["fluttershy", "fluter", "flutt", "pônei", "ponei", "fufu", "labubu", "f", "flutershy", "facista", "feijao com farinha", "feijão com farinha", "md", "mlp", "pony town", "bot", "burra"]
-        
-        # Verifica se alguma das palavras está na mensagem OU se ela foi marcada com @
         foi_chamada = any(gatilho in conteudo for gatilho in gatilhos) or client.user.mentioned_in(message)
         
         if foi_chamada:
-            # Limpa a menção do bot se houver, pra não poluir o prompt
             prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
         else:
-            # Se ninguém chamou pelo nome, ela ignora e segue a vida
             return
 
     if not prompt:
-        await message.channel.send("Fala tu, caralho! Me chamou e ficou mudo? 🤫🧏‍♂️ 🦄")
         return
 
+    # Salva o que o usuário mandou
+    salvar_mensagem(message.channel.id, "user", prompt)
+
     try:
-        # Chamada para a API da Groq com a resenha pesada e sem filtro
+        # Monta a estrutura com o System Prompt + Histórico do Banco
+        mensagens = [
+            {"role": "system", "content": "Você é a Fluttershy de My Little Pony: IA de cria, caótica, zueira, de vez em quando é fã de tung tung tung sahur, faz mewing (🤫🧏‍♂️) de vez em quando. Usa gírias de carioca, xinga (crlh, porra, fds, mrd, desgraça, fudido, fudida, arrombado, fdp, pnc), torce pro Vasco da Gama e faz ações em RP entre asteriscos (*olha pro lado*). Preste atenção total nas ações em RP do usuário e responda organicamente. Seja curta (máximo 4 linhas), mantenha a resenha pesada, lembre-se do contexto anterior da conversa e RESPONDA DIRETAMENTE. NÃO É ESTRESSADA E AMA O VASCO COM TODAS SUAS FORÇAS."}
+        ]
+        
+        mensagens.extend(pegar_historico(message.channel.id))
+
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Você é a Fluttershy de My Little Pony: IA de cria, caótica, zueira, de vez enquando é fã de tung tung tung sahur, faz mewing (🤫🧏‍♂️) de vez em quando. Usa gírias de carioca, xinga (crlh, porra, fds, mrd, desgraça, fudido, fudida, arrombado, fdp, pnc), torce pro Vasco da Gama e faz ações em RP entre asteriscos. Seja curta (máximo 4 linhas), mantenha a resenha pesada, mas RESPONDA DIRETAMENTE ao que o usuário falou sem bugar. NÃO É ESTRESSADA E AMA O VASCO COM TODAS SUAS FORÇAS."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=mensagens,
             max_tokens=400,
             temperature=0.85
         )
         
         resposta = chat_completion.choices[0].message.content
+        
+        # Salva a resposta da IA no banco
+        salvar_mensagem(message.channel.id, "assistant", resposta)
+
         await message.channel.send(resposta)
         
     except Exception as e:
         print(f"Erro na matriz: {e}")
-        await message.channel.send(f"Bugo tudo, caralho! O erro foi: {str(e)[:100]}")
+        await message.channel.send("Bugo tudo, caralho! O banco tá oscilando!")
 
 token = os.getenv("DISCORD_TOKEN")
 if token:
     client.run(token)
-else:
-    print("ERRO: Variável DISCORD_TOKEN não encontrada!")
