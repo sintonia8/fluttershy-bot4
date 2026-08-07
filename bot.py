@@ -19,9 +19,9 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # Lógica de mensagens:
-    # - No privado (DM): responde tudo.
-    # - No servidor: responde se começar com "fluttershy," ou se for mencionada com o @.
+    # Lógica atualizada:
+    # - Se for QUALQUER DM (individual ou grupo privado), ela responde direto.
+    # - Se for em servidor normal, responde se começar com "fluttershy," ou com menção.
     if isinstance(message.channel, discord.DMChannel):
         prompt = message.content.strip()
     elif message.content.lower().startswith("fluttershy,"):
@@ -32,11 +32,11 @@ async def on_message(message):
         return
 
     if not prompt:
-        await message.channel.send("Fala tu, caralho! Mandou o chamado e ficou mudo? 🤫🧏‍♂️ 🦄")
+        await message.channel.send("Fala tu, caralho! Mandou mensagem e ficou mudo? 🤫🧏‍♂️ 🦄")
         return
 
     try:
-        # Chamada para a API da Groq com a resenha na medida certa
+        # Chamada para a API da Groq com a resenha completa
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
