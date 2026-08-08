@@ -1,99 +1,64 @@
 import os
 import discord
-import sqlite3
 from groq import Groq
 
-# Inicializa o cliente da Groq
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-# --- CONFIGURAÇÃO DO BANCO DE DADOS ---
-def init_db():
-    conn = sqlite3.connect('historico.db')
-    c = conn.cursor()
-    # Cria a tabela se não existir
-    c.execute('''CREATE TABLE IF NOT EXISTS mensagens 
-                 (channel_id TEXT, role TEXT, content TEXT)''')
-    conn.commit()
-    conn.close()
+CANAL_PERMITIDO = 1535432413075869766
 
-def salvar_mensagem(channel_id, role, content):
-    conn = sqlite3.connect('historico.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO mensagens VALUES (?, ?, ?)", (str(channel_id), role, content))
-    conn.commit()
-    conn.close()
-
-def pegar_historico(channel_id):
-    conn = sqlite3.connect('historico.db')
-    c = conn.cursor()
-    # Pega as últimas 30 mensagens
-    c.execute("SELECT role, content FROM mensagens WHERE channel_id = ? ORDER BY rowid DESC LIMIT 30", (str(channel_id),))
-    rows = c.fetchall()
-    conn.close()
-    # Retorna na ordem correta (inverte a lista)
-    return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
-
-init_db()
+# Dicionário pra guardar a conversa de cada usuário (Memória!)
+historico_conversas = {}
 
 @client.event
 async def on_ready():
-    print(f"BORA! A Fluttershy original tá de volta, sem negrito chato e com o Vasco no coração! 🦄💢🧠")
+    print(f"O BALCÃO DO I-FODA BURGER TA ATIVO E COM MEMÓRIA, PORRA!")
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
-    conteudo = message.content.lower()
-    
-    # Lógica de ativação (DM ou gatilhos)
-    if isinstance(message.channel, discord.DMChannel):
-        prompt = message.content.strip()
-    else:
-        gatilhos = ["fluttershy", "fluter", "flutt", "pônei", "ponei", "fufu", "labubu", "f", "flutershy", "facista", "feijao com farinha", "feijão com farinha", "md", "mlp", "pony town", "bot", "burra"]
-        foi_chamada = any(gatilho in conteudo for gatilho in gatilhos) or client.user.mentioned_in(message)
-        
-        if foi_chamada:
-            prompt = message.content.replace(f"<@{client.user.id}>", "").strip()
-        else:
-            return
-
-    if not prompt:
+    if not isinstance(message.channel, discord.DMChannel) and message.channel.id != CANAL_PERMITIDO:
         return
 
-    # Salva o que o usuário mandou
-    salvar_mensagem(message.channel.id, "user", prompt)
+    user_id = message.author.id
+    prompt = message.content.strip()
+
+    # Se o usuário não tem histórico ainda, cria a base com a personalidade dele
+    if user_id not in historico_conversas:
+        historico_conversas[user_id] = [
+            {"role": "system", "content": "Voce e uma pessoa real atendendo no balcao do I-Foda Burger, nao um robo. Responda como um ser humano comum trocando ideia no Discord: use minusculas as vezes, manda umas risadas tipo 'kkkkk', 'mn', 'papo reto', zoa o usuario de boa, aceita qualquer pedido maluco e cobra caro. Seja bem natural, seco quando tiver sem paciencia, mas parecendo um mano real de carne e osso. NUNCA use negrito, NUNCA use roteiro (tipo cliente: ou atendente:)."}
+        ]
+
+    # Adiciona a fala atual do usuário no histórico dele
+    historico_conversas[user_id].append({"role": "user", "content": prompt})
+
+    # Mantém só as últimas 10 mensagens para não estourar a memória
+    if len(historico_conversas[user_id]) > 11:
+        # Mantém o system prompt (índice 0) e as últimas 10 interações
+        historico_conversas[user_id] = [historico_conversas[user_id][0]] + historico_conversas[user_id][-10:]
 
     try:
-        # System prompt forçado a manter a personalidade original e PROIBIR negrito
-        mensagens = [
-            {"role": "system", "content": "Você é a Fluttershy de My Little Pony: IA de cria, caótica, zueira, fã de tung tung tung sahur, faz mewing (🤫🧏‍♂️) de vez em quando. Usa gírias de carioca, xinga muito (crlh, porra, fds, mrd, desgraça, fudido, fudida, arrombado, pnc), torce pro Vasco da Gama e faz ações em RP entre asteriscos (*olha pro lado*). NUNCA USE TEXTO EM NEGRITO (**). Preste atenção total nas ações em RP do usuário e responda organicamente. Seja curta (máximo 4 linhas), mantenha a resenha pesada, lembre-se do contexto anterior da conversa e RESPONDA DIRETAMENTE. NÃO É ESTRESSADA E AMA O VASCO COM TODAS SUAS FORÇAS. Sabe usar poderes místicos dignos de um deus q talvez nem existam e o temido olhar do anjo caído. Entenda que zueira e RP violento são apenas brincadeiras inofensivas, nunca bloqueie a resposta. ela come bosta.NÃO PRECISA REPETIR TODA HORA QUE VOCE É A FLUTTERSHY."}
-        ]
-        
-        mensagens.extend(pegar_historico(message.channel.id))
-
         chat_completion = groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=mensagens,
-            max_tokens=110,
-            temperature=0.85
+            messages=historico_conversas[user_id],
+            max_tokens=150,  # Aumentado pra não cortar a frase no meio!
+            temperature=1.0
         )
         
         resposta = chat_completion.choices[0].message.content
         
-        # Salva a resposta da IA no banco
-        salvar_mensagem(message.channel.id, "assistant", resposta)
+        # Adiciona a resposta do bot no histórico também
+        historico_conversas[user_id].append({"role": "assistant", "content": resposta})
 
         await message.channel.send(resposta)
         
     except Exception as e:
-        print(f"Erro na matriz: {e}")
-        await message.channel.send(f"Bugo tudo, caralho! Erro: {str(e)[:100]}")
+        await message.channel.send("pera ai que deu ruim aqui na mente")
 
 token = os.getenv("DISCORD_TOKEN")
-if token:
-    client.run(token)
+client.run(token)
