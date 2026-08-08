@@ -9,7 +9,7 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 # COLE AQUI O ID DO CANAL EXCLUSIVO DA FLUTTERSHY
-CANAL_FLUTTERSHY = 000000000000000000  # Substitua pelos números do canal dela
+  # Substitua pelos números do canal dela
 
 # Dicionário pra guardar o histórico/memória de cada usuário
 historico_flutter = {}
